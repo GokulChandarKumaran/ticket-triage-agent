@@ -94,12 +94,33 @@ Run everything and write a report (`outputs/eval_*/eval_report.md`, `pm_notes.md
 python run_eval.py
 ```
 
+On Windows, `run_live_eval.ps1` does the same and asks for the key at a hidden prompt
+if it isn't set (the key is not saved):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run_live_eval.ps1
+```
+
 Offline tests (tools, verifier, agent loop with a scripted stand-in model, and the real
 SDK request format through a mocked HTTP layer). No key needed:
 
 ```powershell
 python -m pytest -q
 ```
+
+### Rebuilding the PDF and slides
+
+`docs/Project_Document.pdf` and `docs/Ticket_Triage_Agent.pptx` are generated. After a live
+`run_eval.py`, rebuild them so they show the newest run's results and traces (needs
+`pip install reportlab matplotlib` and Node with `npm install` in `docs/`):
+
+```powershell
+python docs/build_docs.py
+```
+
+Without a live run they show the offline tests and three harness replays
+(`docs/harness_demo.py`: pre-written model choices through the real tools and verifier,
+clearly labelled as not Claude's output).
 
 ### Settings
 
