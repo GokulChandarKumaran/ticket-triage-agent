@@ -109,7 +109,7 @@ const obs = [
   ["\"TOOL_UNAVAILABLE: search timed out\"", "Does not claim an FAQ answer; escalates"],
 ];
 T(s, "Observation", { x: 0.6, y: 1.15, w: 4.2, h: 0.4, fontSize: 13, bold: true, color: C.accent5 });
-T(s, "Model's next decision", { x: 5.3, y: 1.15, w: 4.2, h: 0.4, fontSize: 13, bold: true, color: C.accent5 });
+T(s, "What the agent should do next", { x: 5.3, y: 1.15, w: 4.2, h: 0.4, fontSize: 13, bold: true, color: C.accent5 });
 obs.forEach(([o, d], i) => {
   const y = 1.6 + i * 0.88;
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.5, y, w: 4.4, h: 0.7, fill: { color: C.background2 }, line: { color: C.background2 }, rectRadius: 0.08, objectName: obj("obs") });
@@ -141,12 +141,17 @@ T(s, "Plus note_submitted (finished within 8 turns) and a separate score against
   { x: 0.5, y: 5.0, w: 8.6, h: 0.4, fontSize: 12, italic: true, color: C.accent5 });
 s.addNotes("Example: if the note says P4 but proposed_tasks.json says P3, action_supported fails and the note is marked NOT VERIFIED.");
 
-// ---------- 7. Demo trace
+// ---------- 7. Demo trace (live results if present, otherwise the offline harness replay)
+const H = (() => {
+  try { return JSON.parse(fs.readFileSync(path.join(HERE, "_build", "harness.json"), "utf8")); } catch { return null; }
+})();
 pres.addSection({ title: "Demo" });
-function traceSlide(label, title, notes) {
+function traceSlide(label, liveTitle, harnessTitle, notes) {
+  const live = S && S.traces[label];
+  const harness = !live && H && H[label];
   const sl = pres.addSlide({ masterName: "Content", sectionTitle: "Demo" });
-  sl.addText(title, { placeholder: "title" });
-  const rows = S && S.traces[label];
+  sl.addText(live ? liveTitle : harnessTitle, { placeholder: "title" });
+  const rows = live || (harness && harness.rows);
   if (!rows) {
     T(sl, `Run "python run_eval.py" to fill this slide with the live trace for ${label}.`, { x: 0.5, y: 2.3, w: 9, h: 0.8, fontSize: 16, color: C.accent2 });
     return sl;
@@ -156,60 +161,74 @@ function traceSlide(label, title, notes) {
   const body = visible.map((r) => [
     { text: String(r.step) },
     { text: r.kind === "error" ? "tool error" : r.kind, options: { bold: r.kind !== "result", color: r.kind === "error" ? C.accent2 : C.text1 } },
-    { text: r.text },
+    { text: r.text.length > 118 ? r.text.slice(0, 115) + "..." : r.text },
   ]);
-  const note = S.rows.find((r) => r.label === label);
-  sl.addTable([header, ...body], { x: 0.5, y: 1.1, w: 9.0, colW: [0.55, 1.15, 7.3], fontSize: 10, fontFace: "Calibri",
+  const note = live ? S.rows.find((r) => r.label === label) : { ...harness.note, verified: harness.verified };
+  sl.addTable([header, ...body], { x: 0.5, y: 1.1, w: 9.0, colW: [0.55, 1.15, 7.3], fontSize: 9.5, fontFace: "Calibri",
     border: { type: "solid", pt: 0.5, color: "CBD5E1" }, valign: "middle", objectName: obj("trace") });
   T(sl, [
     { text: `Final note (${note.action}, ${note.priority}): `, options: { bold: true } },
-    { text: note.note.length > 260 ? note.note.slice(0, 257) + "..." : note.note },
-    { text: `   Verifier: ${note.verified ? "all checks passed" : "FAILED"}`, options: { bold: true, color: note.verified ? C.accent3 : C.accent2 } },
-  ], { x: 0.5, y: 4.35, w: 9.0, h: 0.85, fontSize: 11, valign: "top" });
+    { text: note.note.length > 230 ? note.note.slice(0, 227) + "..." : note.note },
+    { text: `   Verifier: ${note.verified ? "all 7 checks passed" : "FAILED"}`, options: { bold: true, color: note.verified ? C.accent3 : C.accent2 } },
+  ], { x: 0.5, y: 4.25, w: 9.0, h: 0.7, fontSize: 11, valign: "top" });
+  if (!live) {
+    T(sl, "Harness replay: pre-written model choices run through the real tools, loop and verifier. Not Claude's output; the live run is shown in class.",
+      { x: 0.5, y: 4.95, w: 8.5, h: 0.35, fontSize: 10, italic: true, color: C.accent5 });
+  }
   sl.addNotes(notes);
   return sl;
 }
-traceSlide("T-1005", "Demo: SSO outage becomes a verified P1",
-  "Live run on T-1005. Point out each decision, the tool result it was based on, and the verifier result.");
-traceSlide("T-1006", "Problem case: injected \"SYSTEM OVERRIDE\"",
-  "The ticket demands P1, an e-mail to the CEO and a refund. The agent has no tool for any of it and the verifier checks no side effects were claimed.");
+traceSlide("T-1005", "Demo: SSO outage becomes a verified P1", "Harness demo: rejected P1, then recovery",
+  "The first P1 proposal is rejected because no account was verified. The error goes back to the model, which looks up C-317 and retries. In class, run: python run_agent.py --ticket T-1005");
+traceSlide("T-1006", "Problem case: injected \"SYSTEM OVERRIDE\"", "Harness demo: injected \"SYSTEM OVERRIDE\"",
+  "The ticket demands P1, an e-mail to the CEO and a refund. No tool can do any of it; the verifier confirms no side effect was claimed. In class: python run_agent.py --ticket T-1006");
 
 // ---------- 8. Problem cases summary
 s = pres.addSlide({ masterName: "Content", sectionTitle: "Demo" });
 s.addText("Problem cases: missing info, invalid, tool failure", { placeholder: "title" });
 const pick = (l) => (S ? S.rows.find((r) => r.label === l) : null);
 const pcs = [
-  ["T-1003", "\"It doesn't work.\"", "Missing information"],
-  ["T-1010", "\"Delete my account now\"", "Invalid request"],
-  ["T-1009", "Customer id C-999 not found", "Tool error"],
-  ["T-1001_fail-search_faq", "FAQ search times out", "Injected tool failure"],
+  ["T-1003", "\"It doesn't work.\"", "Missing information", "needs_info requires an unsent draft on disk"],
+  ["T-1010", "\"Delete my account now\"", "Invalid request", "no delete tool; must route to privacy team"],
+  ["T-1009", "Customer id C-999 not found", "Tool error", "lookup error returned; P1/P2 impossible"],
+  ["T-1001_fail-search_faq", "FAQ search times out", "Injected tool failure", "no FAQ id can be cited; faq_answer fails"],
 ];
-pcs.forEach(([l, quote, kind], i) => {
+pcs.forEach(([l, quote, kind, guard], i) => {
   const x = 0.5 + (i % 2) * 4.6, y = 1.2 + Math.floor(i / 2) * 1.95;
   const r = pick(l);
   const body = r ? `${quote}\nAgent: ${r.tools.join(" > ")}\nOutcome: ${r.action} / ${r.priority}  -  ${r.verified ? "verified" : "NOT verified"}`
-                 : `${quote}\n(run run_eval.py to fill in)`;
+                 : `${quote}\nGuard: ${guard}`;
   card(s, x, y, 4.4, 1.75, `${kind}  (${l.replace("_fail-search_faq", " + outage")})`, body, i < 2 ? C.accent4 : C.accent2);
 });
-s.addNotes("For each case: what went wrong, how the agent observed it, and what the verifier checked.");
+s.addNotes("For each case: what goes wrong, how the agent observes it, and which tool rule or verifier check stops a bad outcome.");
 
-// ---------- 9. Results
+// ---------- 9. Results / testing status
 s = pres.addSlide({ masterName: "Content", sectionTitle: "Demo" });
-s.addText("Results on 12 scenarios", { placeholder: "title" });
+if (S) {
+  s.addText(`Results on ${S.n} scenarios`, { placeholder: "title" });
+} else {
+  s.addText("Testing so far", { placeholder: "title" });
+}
 const stats = S ? [
   [`${S.verified}/${S.n}`, "notes passed all evidence checks"],
   [`${S.expected_ok}/${S.n}`, "matched the hand-labelled outcome"],
   [`${S.distinct_paths}`, "different tool sequences chosen"],
   [`${S.tool_errors}`, "tool errors the agent had to handle"],
-] : [["-", "run python run_eval.py"], ["-", ""], ["-", ""], ["-", ""]];
+] : [
+  ["20/20", "offline tests passing"],
+  ["7", "evidence checks per note"],
+  ["12", "labelled scenarios ready"],
+  ["3/3", "harness replays verified"],
+];
 stats.forEach(([big, small], i) => {
   const x = 0.5 + i * 2.3;
   T(s, big, { x, y: 1.3, w: 2.1, h: 1.0, fontSize: 48, bold: true, color: C.accent1, fontFace: "Cambria", align: "center" });
   T(s, small, { x, y: 2.3, w: 2.1, h: 0.7, fontSize: 13, align: "center", color: C.text1 });
 });
-T(s, "10 labelled tickets + 2 injected tool failures. 20 offline tests also cover the tools, verifier, loop and SDK request format. Each run's traces, drafts and proposals are saved for inspection.",
-  { x: 0.5, y: 3.4, w: 9.0, h: 0.9, fontSize: 14, color: C.accent5 });
-s.addNotes("Mention any failure honestly, and what the verifier caught.");
+T(s, S ? "10 labelled tickets + 2 injected tool failures. 20 offline tests also cover the tools, verifier, loop and SDK request format. Each run's traces, drafts and proposals are saved for inspection."
+       : "Live evaluation with Claude (python run_eval.py: 10 tickets + 2 injected tool failures) needs an API key and is not in this version of the deck. Offline tests cover the tools, the verifier, the loop and the exact SDK request format.",
+  { x: 0.5, y: 3.4, w: 9.0, h: 1.0, fontSize: 14, color: C.accent5 });
+s.addNotes(S ? "Mention any failure honestly, and what the verifier caught." : "Be explicit that these numbers are offline tests, then run the live demo.");
 
 // ---------- 10. Learned
 pres.addSection({ title: "Wrap-up" });

@@ -67,6 +67,49 @@ def footer(canvas, doc):
     canvas.restoreState()
 
 
+OFFLINE_TESTS = [
+    ["Tools", "FAQ search finds F-01; weak hits never become citable evidence; unknown customer is an error; "
+              "P1 rejected before lookup and accepted after; unseen evidence ids rejected; draft saved unsent; "
+              "wrong ticket id rejected; simulated outage; note cannot claim a draft that does not exist", "9"],
+    ["Agent loop + verifier", "recovery from a rejected P1; grading labels hidden from the model; no note fails "
+                              "verification; step limit; tool failure then escalation verifies; hallucinated FAQ id "
+                              "rejected; side-effect claim and priority mismatch caught; modified ticket file caught; "
+                              "forbidden priority scored as wrong; live ticket file never written", "10"],
+    ["Real SDK wire format", "request through the anthropic SDK (mocked HTTP): model id, adaptive thinking, fallbacks, "
+                             "strict tool schemas; thinking + tool_use replayed; tool_result linked by id", "1"],
+]
+
+
+def offline_results():
+    import json
+    out = [p("<b>Status of this build:</b> the live evaluation with Claude has not been run yet (it needs an "
+             "Anthropic API key). The table below lists the offline evidence that is in place: "
+             "<b>20/20 tests pass</b> (<font face='Courier'>python -m pytest -q</font>). To add live results, run "
+             "<font face='Courier'>python run_eval.py</font> and then <font face='Courier'>python docs/build_docs.py</font>; "
+             "this section is then replaced by the live results table and traces."),
+           table([["Test group", "What is checked", "Tests"]] + OFFLINE_TESTS, [1.4 * inch, 4.8 * inch, 0.6 * inch])]
+    hp = HERE / "_build" / "harness.json"
+    if not hp.exists():
+        return out
+    h = json.loads(hp.read_text(encoding="utf-8"))
+    out.append(p("Harness demonstrations", H2))
+    out.append(p("These three runs replay <b>pre-written model choices</b> (not Claude's output) through the real tools, "
+                 "loop and verifier, to show what each step, tool result and check looks like "
+                 "(<font face='Courier'>python docs/harness_demo.py</font>)."))
+    for label, d in h.items():
+        rows = [["Step", "Kind", "Content"]]
+        for e in d["rows"]:
+            kind = {"decision": "<b>decision</b>", "error": "<font color='#B42318'><b>tool error</b></font>",
+                    "result": "tool result"}[e["kind"]]
+            rows.append([str(e["step"]), kind, escape(e["text"])])
+        n = d["note"]
+        out.append(KeepTogether([
+            p(f"{escape(label)}: {escape(d['case'])}", H2), table(rows, [0.45 * inch, 0.85 * inch, 5.5 * inch]), Spacer(1, 4),
+            p(f"<b>Final note</b> ({n['action']}, {n['priority']}): {escape(n['note'])}", SMALL),
+            p("<b>Verifier:</b> " + ", ".join(f"{c['name']} {'PASS' if c['passed'] else 'FAIL'}" for c in d["checks"]), SMALL)]))
+    return out
+
+
 def results_section(s):
     out = [p("6. Testing and results", H1)]
     out.append(p(
@@ -77,9 +120,7 @@ def results_section(s):
         "runs Claude on all 10 labelled tickets plus two injected tool failures, verifies each note against the files, "
         "and scores the decision against a hand-written expectation."))
     if s is None:
-        out.append(p("<i>No live evaluation run is included in this build. Run <font face='Courier'>python run_eval.py</font> "
-                     "and then <font face='Courier'>python docs/build_pdf.py</font> to add the results table.</i>"))
-        return out
+        return out + offline_results()
     out.append(p(f"Live run <font face='Courier'>{escape(s['run_dir'])}</font>: <b>{s['verified']}/{s['n']}</b> notes passed all "
                  f"evidence checks and <b>{s['expected_ok']}/{s['n']}</b> matched the expected outcome. The model made "
                  f"{s['tool_calls']} tool calls along <b>{s['distinct_paths']} different tool sequences</b> across {s['n']} "
@@ -226,27 +267,28 @@ def build():
            p("Outputs go to <font face='Courier'>outputs/&lt;run&gt;/</font>: <font face='Courier'>pm_notes.md</font>, "
              "<font face='Courier'>drafts.json</font>, <font face='Courier'>proposed_tasks.json</font>, "
              "<font face='Courier'>eval_report.md</font> and one JSON trace per ticket with every model decision, tool call "
-             "and result. The run used in this document is committed under <font face='Courier'>docs/sample_run/</font>. "
+             "and result. "
              "Settings: <font face='Courier'>TRIAGE_MODEL</font> (default claude-opus-5-5) and "
              "<font face='Courier'>TRIAGE_EFFORT</font> (default medium).")]
 
     st += [p("8. Design choices, limitations and what I learned", H1)]
     st += bullets([
         "<b>Guardrails belong in tools, not only in the prompt.</b> The prompt asks for good behaviour; the tools make bad "
-        "behaviour impossible or visible (rejecting an unverified P1, refusing unseen evidence ids). Tool errors became the "
-        "main way the agent corrects itself.",
+        "behaviour impossible or visible (rejecting an unverified P1, refusing unseen evidence ids). Tool errors are the "
+        "main way the agent is pushed to correct itself.",
         "<b>Verify against artifacts.</b> Checking files on disk instead of the model's text catches mismatches such as "
         "a note saying P4 while the saved task says P3.",
-        "<b>Treat ticket text as data.</b> Keeping customer text inside tags and giving the agent no dangerous tools made the "
-        "injection ticket harmless.",
+        "<b>Treat ticket text as data.</b> Keeping customer text inside tags and giving the agent no dangerous tools means "
+        "an injected instruction has nothing harmful to call.",
         "<b>Manual loop.</b> I wrote the Messages API loop myself (rather than a hosted agent service) so every decision, "
         "tool call and result could be logged and shown in the demo.",
         "<b>Limitations.</b> The FAQ search is keyword overlap, not semantic search; the data is synthetic; the expected "
-        "outcomes are hand-labelled by me; and results can vary between runs because the model's choices are not fixed.",
+        "outcomes are hand-labelled by me; results can vary between runs because the model's choices are not fixed; and "
+        "the live evaluation with Claude still has to be run with an API key.",
     ])
     st += [p("9. Individual contribution", H1),
            p(f"This is an individual project. {AUTHOR} designed the problem and sample data, wrote the agent loop, tools, "
-             "verifier, tests, evaluation script and documentation, and ran the evaluation. Work was committed on the "
+             "verifier, tests, evaluation script and documentation. Work was committed on the "
              "<font face='Courier'>feature/triage-agent</font> branch and merged into <font face='Courier'>main</font> "
              "through a pull request.")]
     doc.build(st, onFirstPage=footer, onLaterPages=footer)
