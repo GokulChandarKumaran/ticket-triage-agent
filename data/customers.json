@@ -1,0 +1,8 @@
+[
+  {"customer_id": "C-101", "company": "Brightline Studio", "plan": "Starter", "seats": 4, "sla_response_hours": 48, "open_tickets": 0},
+  {"customer_id": "C-204", "company": "Acme Logistics", "plan": "Enterprise", "seats": 420, "sla_response_hours": 4, "open_tickets": 2},
+  {"customer_id": "C-317", "company": "Northwind Health", "plan": "Enterprise", "seats": 1150, "sla_response_hours": 2, "open_tickets": 1},
+  {"customer_id": "C-422", "company": "Pebble Cafe", "plan": "Free", "seats": 1, "sla_response_hours": 120, "open_tickets": 0},
+  {"customer_id": "C-538", "company": "Orbit Analytics", "plan": "Business", "seats": 60, "sla_response_hours": 12, "open_tickets": 3},
+  {"customer_id": "C-645", "company": "Lumen Tutors", "plan": "Business", "seats": 35, "sla_response_hours": 12, "open_tickets": 0}
+]
