@@ -1,0 +1,74 @@
+[
+  {
+    "id": "F-01",
+    "question": "How do I reset my password?",
+    "answer": "Go to Settings > Security > Reset password, or click 'Forgot password' on the sign-in page. A reset link is emailed and expires after 30 minutes.",
+    "tags": ["password", "reset", "login", "forgot", "sign-in", "account"]
+  },
+  {
+    "id": "F-02",
+    "question": "Where can I download my invoices?",
+    "answer": "Account owners and billing admins can download invoices as PDF from Billing > Invoices. Invoices for the last 24 months are available.",
+    "tags": ["invoice", "invoices", "billing", "receipt", "download", "pdf"]
+  },
+  {
+    "id": "F-03",
+    "question": "How do I export my data to CSV?",
+    "answer": "Open Reports, choose the report, then Export > CSV. Exports over 100k rows are emailed as a download link within 15 minutes.",
+    "tags": ["export", "csv", "report", "download", "data"]
+  },
+  {
+    "id": "F-04",
+    "question": "How do I add or remove team members?",
+    "answer": "Admins can manage seats in Settings > Team. Removing a member frees the seat immediately; billing adjusts on the next invoice.",
+    "tags": ["team", "member", "seat", "invite", "remove", "user", "users"]
+  },
+  {
+    "id": "F-05",
+    "question": "How do I set up single sign-on (SSO)?",
+    "answer": "SSO (SAML 2.0) is available on the Enterprise plan. Configure it in Settings > Security > SSO and upload your IdP metadata.",
+    "tags": ["sso", "saml", "single", "sign-on", "okta", "azure", "idp", "enterprise"]
+  },
+  {
+    "id": "F-06",
+    "question": "Which mobile app versions are supported?",
+    "answer": "We support the two most recent major versions of the iOS and Android apps. Update from the App Store or Google Play.",
+    "tags": ["mobile", "ios", "android", "app", "version", "update"]
+  },
+  {
+    "id": "F-07",
+    "question": "What is the maximum file upload size?",
+    "answer": "Single uploads are limited to 250 MB on all plans. Larger files should be split or uploaded through the desktop sync client.",
+    "tags": ["upload", "file", "size", "limit", "attachment", "mb"]
+  },
+  {
+    "id": "F-08",
+    "question": "How do I request a refund?",
+    "answer": "Refunds are handled by the billing team only. Customers request them from Billing > Request refund; support staff cannot issue refunds.",
+    "tags": ["refund", "money", "charge", "billing", "cancel"]
+  },
+  {
+    "id": "F-09",
+    "question": "How do I delete my account and data?",
+    "answer": "Account deletion is a privacy request handled by the privacy team within 30 days, after identity verification. It cannot be done by support.",
+    "tags": ["delete", "deletion", "account", "gdpr", "privacy", "data", "erase"]
+  },
+  {
+    "id": "F-10",
+    "question": "Is dark mode or theme customization available?",
+    "answer": "A dark theme is on the public roadmap but has no release date. Feature requests are collected by the product team.",
+    "tags": ["dark", "mode", "theme", "feature", "request", "roadmap"]
+  },
+  {
+    "id": "F-11",
+    "question": "Where can I check service status?",
+    "answer": "Live service status and incident history are published at status.example-app.com.",
+    "tags": ["status", "outage", "down", "incident", "uptime"]
+  },
+  {
+    "id": "F-12",
+    "question": "How do I enable two-factor authentication?",
+    "answer": "Enable 2FA in Settings > Security > Two-factor authentication using an authenticator app or a security key.",
+    "tags": ["2fa", "two-factor", "mfa", "authentication", "security", "login"]
+  }
+]
